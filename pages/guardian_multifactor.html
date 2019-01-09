@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>2nd Factor Authentication</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <style type="text/css">
+      html, body { padding: 0; margin: 0; }
+
+      .table {
+        display: table;
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        background-color: red;
+      }
+
+      .cell {
+        display: table-cell;
+        vertical-align: middle;
+      }
+
+      .content {
+        padding: 25px 0px 25px 0px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 280px; /* login widget width */
+      }
+
+    </style>
+  </head>
+
+  <body>
+
+    <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s="   crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.qrcode/1.0/jquery.qrcode.min.js"></script>
+    <script src="https://cdn.auth0.com/js/guardian-js/1.3.0/guardian-js.js"></script>
+
+    <style>
+      .hidden {
+        display: none
+      }
+
+      .container {
+        border: 1px solid #ababab;
+        width: 400px;
+        margin: auto;
+        padding: 20px;
+        margin-top: 30px;
+      }
+
+      .error {
+        color: #FFADB3;
+      }
+
+      .info {
+        color: #33CC33
+      }
+    </style>
+
+    <div class="container">
+      <div class="error hidden" data-error></div>
+      <div class="info hidden" data-recovery-report-container>
+        <span data-recovery-report></span>
+        <button type="button" data-saved-recovery>Got it!</button>
+      </div>
+
+      <div data-loading data-screen>Loading...</div>
+
+      <div class="hidden" data-screen data-enrollment-enroll data-method="sms">
+        <div data-enrollment-toolbar>
+          <button type="button" data-show-enrollment="push" class="hidden">Push</button>
+          <button type="button" data-show-enrollment="sms" class="hidden">SMS</button>
+          <button type="button" data-show-enrollment="otp" class="hidden">OTP</button>
+        </div>
+
+        <form data-enroll>
+          <p>Please enter your phone</p>
+          <input type="tel" data-enroll-field="phoneNumber"/>
+          <button type="submit">Enroll</button>
+        </form>
+      </div>
+
+      <div class="hidden" data-screen data-enrollment-confirm data-method="sms">
+        <div data-enrollment-toolbar>
+          <button type="button" data-show-enrollment="push" class="hidden">Push</button>
+          <button type="button" data-show-enrollment="sms" class="hidden">SMS</button>
+          <button type="button" data-show-enrollment="otp" class="hidden">OTP</button>
+        </div>
+
+        <form data-confirm>
+          <p>Please enter the verification code we sent by SMS</p>
+          <input type="text" data-confirm-field="otpCode"/>
+          <button type="submit">Confirm enrollment</button>
+        </form>
+      </div>
+
+      <div class="hidden" data-screen data-enrollment-enroll data-method="push">
+        <div data-enrollment-toolbar>
+          <button type="button" data-show-enrollment="push" class="hidden">Push</button>
+          <button type="button" data-show-enrollment="sms" class="hidden">SMS</button>
+          <button type="button" data-show-enrollment="otp" class="hidden">OTP</button>
+        </div>
+
+        <p>Scan this QR With Guardian app</p>
+        <div data-qr></div>
+      </div>
+
+      <div class="hidden" data-screen data-enrollment-enroll data-method="otp" data-enrollment-confirm>
+        <div data-enrollment-toolbar>
+          <button type="button" data-show-enrollment="push" class="hidden">Push</button>
+          <button type="button" data-show-enrollment="sms" class="hidden">SMS</button>
+          <button type="button" data-show-enrollment="otp" class="hidden">OTP</button>
+        </div>
+
+        <form data-confirm>
+          <p>Scan this QR With Google Authenticator</p>
+          <div data-qr></div>
+          <p>Enter a code to confirm enrollment</p>
+          <input type="text" data-confirm-field="otpCode"/>
+          <button type="submit">Confirm enrollment</button>
+        </form>
+      </div>
+
+      <div class="hidden" data-screen data-login-confirm="otp">
+        <form data-login-verify>
+          <p>Enter a code to login</p>
+          <input type="text" data-verify-field="otpCode" />
+          <button type="submit">Login</button>
+        </form>
+        <p>
+          <button type="button" data-show-recovery>Recovery</button>
+        </p>
+      </div>
+
+      <div class="hidden" data-screen data-login-confirm="push">
+        <p data-request-loading>Sending push notification...</p>
+        <p data-request-done>We have sent a push notification to your phone</p>
+        <button type="button" data-login-verify-show="otp">I don't have the device handy</button>
+        <button type="button" data-request>Retry</button>
+        <p>
+          <button type="button" data-show-recovery>Recovery</button>
+        </p>
+      </div>
+
+      <div class="hidden" data-screen data-login-confirm="sms">
+        <p data-request-loading>Sending sms...</p>
+        <p data-request-done>
+          Enter a the code we sent by SMS.
+          <button type="button" data-request>Retry</button>
+        </p>
+        <form data-login-verify>
+          <input type="text" data-verify-field="otpCode"/>
+          <button type="submit">Login</button>
+        </form>
+        <p>
+          <button type="button" data-show-recovery>Recovery</button>
+        </p>
+      </div>
+
+      <div class="hidden" data-screen data-recovery data-login-confirm="recovery-code">
+        <form data-recovery-verify>
+          <p>Enter recovery code to login</p>
+          <input type="text" data-recovery-field="recoveryCode" />
+          <button type="submit">Login</button>
+        </form>
+      </div>
+
+      <div class="hidden" data-screen data-messages>
+        <p data-type></p>
+        <p data-message></p>
+      </div>
+
+    </div>
+
+    <script>
+      (function() {
+        var $root = $('body');
+
+        var screen = (function() {
+          var $active;
+
+          function transitionTo(to) {
+            $to = $(to);
+
+            $('[data-error]').addClass('hidden');
+            $('[data-screen]').addClass('hidden');
+            $to.removeClass('hidden');
+            $active = $to;
+
+            return $active;
+          }
+
+          function getActive() {
+            return $active
+          }
+
+          return {
+            getActive: getActive,
+            transitionTo: transitionTo
+          };
+        })();
+
+        var state = {
+          pendingReports: {},
+          current: {
+            authPayload: null
+          }
+        };
+
+        screen.transitionTo('[data-loading]');
+
+        function postCallServer(authPayload) {
+          {% if postActionURL %}
+          auth0GuardianJS.formPostHelper("{{ postActionURL }}", authPayload);
+          {% endif %}
+        }
+
+        // --------------------- Setup Guardian JS ----------------------------
+
+        var guardianjs = auth0GuardianJS({
+          serviceUrl: "{{ mfaServerUrl }}",
+          {% if ticket %}
+          ticket: "{{ ticket }}",
+          {% else %}
+          requestToken: "{{ requestToken }}",
+          {% endif %}
+
+          issuer: {
+            label: "{{ userData.friendlyUserId }}",
+            name: "{{ userData.tenant }}",
+          },
+
+          globalTrackingId: "{{ globalTrackingId }}"
+        });
+
+        $root
+          .off('click.saved-recovery')
+          .on('click.saved-recovery', '[data-saved-recovery]', function() {
+            if (state.current.authPayload) { postCallServer(state.current.authPayload); }
+          });
+
+        $root
+          .off('click.request')
+          .on('click.request', '[data-request]', function() {
+            requestAuth(state.current.transaction, state.current.enrollment, state.current.method);
+          });
+
+        $root
+          .off('submit.login-verify')
+          .on('submit.login-verify', '[data-login-verify]', function(e) {
+            e.preventDefault();
+
+            var data = getData(screen.getActive(), '[data-verify-field]', 'verify-field');
+            state.current.auth.verify(data);
+          });
+
+        $root
+          .off('click.show-recovery')
+          .on('click.show-recovery', '[data-show-recovery]', function() {
+            screen.transitionTo('[data-recovery]');
+          });
+
+        $root
+          .off('click.login-verify-show')
+          .on('click.login-verify-show', '[data-login-verify-show]', function() {
+            startAuth(state.current.transaction, 'otp');
+          });
+
+        $root
+          .off('submit.recovery-verify')
+          .on('submit.recovery-verify', '[data-recovery-verify]', function(evt) {
+            evt.preventDefault();
+
+            recoverAccount(state.current.transaction);
+          });
+
+        // ------------------- START Guardian transaction ---------------------
+        guardianjs.start(function(err, transaction) {
+          if (err) {
+            state.transaction = null;
+            showError(err);
+            return;
+          }
+
+          state.current.transaction = transaction;
+
+          // Let's start listening for timeout in case the user takes too long
+          // to login and the transaction expires
+          transaction.on('timeout', function(p) {
+            showError('Seems that you\'ve taken too long to login');
+          });
+
+          // Let's start listening for errors
+          transaction.on('error', function(err) {
+            showError(err);
+          });
+
+          transaction.on('enrollment-complete', function(p) {
+            // If enrollment is complete but not the transaction
+            // we need to render the login screen to continue the
+            // transaction
+            if (p.authRequired) {
+              startAuth(transaction);
+            }
+
+            if (p.recoveryCode) {
+              $('[data-recovery-report-container]').removeClass('hidden');
+              $('[data-recovery-report]').text('Recovery code: ' + p.recoveryCode);
+              state.pendingReports.recovery = true;
+            }
+          });
+
+          transaction.on('auth-response', function(p) {
+            state.current.authPayload = p;
+
+            if (!p.accepted) {
+              // Login has been rejected, the transaction can continue anyway
+              showLocalError('Login rejected');
+              return;
+            }
+
+            if (p.recoveryCode) {
+              // New recovery code
+              $('[data-recovery-report-container]').removeClass('hidden');
+              $('[data-recovery-report]').text('New recovery code: ' + p.recoveryCode);
+              state.pendingReports.recovery = true;
+            }
+
+            if (Object.keys(state.pendingReports).length === 0) {
+              // Login is complete and there is nothing else to post let's callback the server
+              postCallServer(state.current.authPayload);
+            }
+
+            showSuccess('Login complete');
+          });
+
+          if (transaction.isEnrolled()) {
+            startAuth(transaction)
+            // If user is enrolled let's go to login screen
+            //renderLogin(transaction);
+          } else {
+            // If user is not enrolled let's go to enrollment screen
+            startEnrollment(transaction);
+          }
+
+          return null;
+        });
+
+        function startAuth(transaction, method) {
+          var enrollment = state.current.enrollment = transaction.getEnrollments()[0];
+          var availableMethods = state.current.availableMethods = enrollment.getAvailableAuthenticatorTypes();
+          if (availableMethods.length === 0) {
+            showError('No available method')
+          }
+
+          method = state.current.method = method || availableMethods[0];
+
+          screen.transitionTo('[data-login-confirm="' + method + '"]');
+
+          requestAuth(transaction, enrollment, method);
+        }
+
+        function requestAuth(transaction, enrollment, method) {
+          var $active = screen.getActive();
+          $active.find('[data-request-loading]').removeClass('hidden');
+          $active.find('[data-request-done]').addClass('hidden');
+
+          transaction.requestAuth(enrollment, { method: method }, function(err, auth) {
+            if (err) {
+              return showError(err);
+            }
+
+            var $active = screen.getActive();
+            $active.find('[data-request-loading]').addClass('hidden');
+            $active.find('[data-request-done]').removeClass('hidden');
+
+            state.current.auth = auth;
+          });
+        }
+
+        function startEnrollment(transaction) {
+          var availableMethods = transaction.getAvailableEnrollmentMethods();
+
+          var i;
+          for (i = 0; i < availableMethods.length; i++) {
+            $root.find('[data-show-enrollment="' + availableMethods[i] + '"]')
+              .removeClass('hidden');
+          }
+
+          screen.transitionTo('[data-enrollment-enroll][data-method="' + availableMethods[0] + '"]');
+
+          renderEnrollmentToMethod(transaction, availableMethods[0]);
+
+          $root
+            .off('click.show-enrollment')
+            .on('click.show-enrollment', '[data-show-enrollment]', function(evt) {
+              var method = $(evt.target).data('show-enrollment');
+              renderEnrollmentToMethod(transaction, method);
+            });
+
+        }
+
+        function renderEnrollmentToMethod(transaction, method) {
+          screen.transitionTo('[data-enrollment-enroll]' +
+                              '[data-method="' + method + '"]');
+
+          // Show the QR if there is an enrollment URI, if the factor
+          // doesn't support an URI you will get null on getUri() method
+          var $qr = screen.getActive().find('[data-qr]');
+          if ($qr.length) {
+            transaction.enroll(method, null, function(err, enroll) {
+              if (err) {
+                return showLocalError(err);
+              }
+
+              state.current.enroll = enroll;
+
+              $qr.empty().qrcode(enroll.getUri());
+            });
+          }
+
+          $root
+            .off('submit.enroll')
+            .on('submit.enroll', '[data-enroll]', function(evt) {
+              evt.preventDefault();
+              var data = getData(screen.getActive(),
+                                  '[data-enroll-field]', 'enroll-field');
+              // Sends enrollment data to the server. This is the first step of
+              // enrollment. You need to send phoneNumber for sms, the other
+              // factors doesn't need sending data, but the method is a
+              // NOOP that returns a promise just as a convenience
+              transaction.enroll(method, data, function(err, enroll) {
+                if (err) {
+                  return showLocalError(err);
+                }
+
+                state.current.enroll = enroll;
+
+                screen.transitionTo('[data-enrollment-confirm]' +
+                                    '[data-method="' + method + '"]');
+              });
+            });
+
+          $root
+            .off('submit.confirm')
+            .on('submit.confirm', '[data-confirm]', function(evt) {
+              evt.preventDefault();
+              var data = getData(screen.getActive(),
+                                  '[data-confirm-field]', 'confirm-field');
+              var enroll = state.current.enroll;
+
+              // Once enroll information is sent you have to confirm the
+              // enrollment by sending the first otp code
+              enroll.confirm(data);
+          });
+        }
+
+        function recoverAccount(transaction) {
+          delete state.pendingReports.recovery;
+          var data = getData(screen.getActive(), '[data-recovery-field]', 'recovery-field');
+          transaction.recover(data);
+        }
+
+        // ----------------------------- Utilities ------------------------------
+
+        function showMessage(message, type) {
+          $messages = $('[data-messages]');
+
+          screen.transitionTo($messages);
+
+          $messages.attr('class', type);
+          $messages.find('[data-type]').text(type === 'error' ? 'Error:' : 'Success:');
+          $messages.find('[data-message]').text(message);
+
+          return null;
+        }
+
+        var errors = {
+          local: [
+            'error_sending_push_notification',
+            'push_notification_wrong_credentials',
+            'invalid_otp',
+            'invalid_recovery_code',
+            'invalid_body',
+            'invalid_query_string',
+            'invalid_phone_number',
+            'error_sending_sms',
+            'pn_endpoint_disabled',
+            'too_many_sms',
+            'too_many_pn',
+            'too_many_sms_per_tenant',
+            'too_many_pn_per_tenant',
+            'invalid_otp_format',
+            'invalid_recovery_code_format'
+          ],
+          global: [
+            'invalid_token',
+            'insufficient_scope',
+            'invalid_bearer_format',
+            'enrollment_conflict',
+            'tenant_not_found',
+            'login_transaction_not_found',
+            'enrollment_transaction_not_found',
+            'feature_disabled',
+            'feature_disabled_by_admin',
+            'method_not_found',
+            'no_method_available',
+            'enrollment_method_disabled',
+            'auth_method_disabled',
+            'transaction_expired',
+            'already_enrolled',
+            'not_enrolled'
+          ]
+        };
+
+        function showError(message) {
+          if (message instanceof Error) {
+            if (errors.local.indexOf(message.errorCode) >= 0) {
+              showLocalError(message);
+              return;
+            }
+
+            message = message.message || 'Something went wrong...';
+          }
+
+          showMessage(message, 'error');
+        }
+
+        function showLocalError(message) {
+          if (message instanceof Error) {
+            message = message.message || 'Something went wrong...';
+          }
+
+          $root.find('[data-error]').text(message).removeClass('hidden');
+        }
+
+        function showSuccess(message) {
+          showMessage(message, 'success');
+        }
+
+        // Get data from
+        function getData($root, selector, dataField) {
+          var data = {};
+
+          $root.find(selector).each(function(index, item) {
+            var $item = $(item);
+            return data[$item.data(dataField)] = $item.val();
+          });
+
+          return data;
+        }
+
+      })();
+    </script>
+  </body>
+</html>

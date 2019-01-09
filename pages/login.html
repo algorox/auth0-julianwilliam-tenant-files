@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Sign In to jwlm</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+
+  <!--[if IE 8]>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/ie8/0.2.5/ie8.js"></script>
+  <![endif]-->
+
+  <!--[if lte IE 9]>
+  <script src="https://cdn.auth0.com/js/base64.js"></script>
+  <script src="https://cdn.auth0.com/js/es5-shim.min.js"></script>
+  <![endif]-->
+
+  <script src="https://cdn.auth0.com/js/lock/11.11.0/lock.min.js"></script>
+  <script>
+    // Decode utf8 characters properly
+    var config = JSON.parse(decodeURIComponent(escape(window.atob('@@config@@'))));
+    config.extraParams = config.extraParams || {};
+    var connection = config.connection;
+    var prompt = config.prompt;
+    var languageDictionary;
+    var language;
+    if (config.dict && config.dict.signin && config.dict.signin.title) {
+      languageDictionary = { title: config.dict.signin.title };
+    } else if (typeof config.dict === 'string') {
+      language = config.dict;
+    }
+
+    //logic to show Child Tenant name in title
+    var titleField;
+    var whichChild = ['8sTaIoUxYipj0yULLUvgpw2AjM4P75Rg', 'IDoPs0pjWjTywrLufYWTUnQUlhzD3Cj5', '8VFgqAQKBv8vEXFO8E1FjLhlmDzqB3MV'];
+    if (config.clientID === whichChild[0])
+    {
+      var titleField = 'Waitrose Food ULP'
+    }
+    else if (config.clientID === whichChild[1])
+    {
+      var titleField = 'Waitrose Flowers ULP'
+    }
+    else if (config.clientID === whichChild[2])
+    {
+      var titleField = 'John Lewis Partnership ULP'
+    }
+    else
+    {
+      var titleField = 'Universal Login Page'
+    };
+
+    var loginHint = config.extraParams.login_hint;
+    
+    var passwordlessOptions = {
+      allowedConnections: ['sms'],
+      auth: {
+        redirectUrl: config.callbackURL,
+        responseType: config.internalOptions,
+        params: config.internalOptions,
+        sso: true
+      },
+      assetsUrl:  config.assetsUrl,
+      allowedConnections: connection ? [connection] : null,
+      closable: false,
+      language: language,
+      languageDictionary: {
+      emailInputPlaceholder: loginHint ? { email: loginHint, username: loginHint } : 'email@auth0.com',
+      lastLoginInstructions: 'Last time you Signed in with',
+      loginAtLabel: 'Sign In at %s',
+      loginLabel: 'Sign In',
+      loginSubmitLabel: 'Sign In',
+      loginWithLabel: 'Sign In with %s',
+      title: 'Universal Login Page - PWless'
+      },
+      configurationBaseUrl: config.clientConfigurationBaseUrl,
+      overrides: {
+  	     __tenant: config.auth0Tenant,
+  	     __token_issuer: 'auth.julianwilliam.com'
+       },
+      rememberLastLogin: true,
+      socialButtonStyle: 'small',
+      theme: {
+        logo: 'http://www.indinnovation.com/images/icons/innovation.png',
+        primaryColor:    'gray'
+      },
+      prefill: loginHint ? { email: loginHint, username: loginHint } : null,
+    };
+
+    var withPasswordOptions = {
+      auth: {
+        redirectUrl: config.callbackURL,
+        responseType: (config.internalOptions || {}).response_type ||
+          (config.callbackOnLocationHash ? 'token' : 'code'),
+        params: config.internalOptions,
+        sso: true
+      },
+      assetsUrl:  config.assetsUrl,
+      allowedConnections: connection ? [connection] : null,
+      closable: false,
+      language: language,
+      languageDictionary: {
+      emailInputPlaceholder: loginHint ? { email: loginHint, username: loginHint } : 'email@auth0.com',
+      lastLoginInstructions: 'Last time you Signed in with',
+      loginAtLabel: 'Sign In at %s',
+      loginLabel: 'Sign In',
+      loginSubmitLabel: 'Sign In',
+      loginWithLabel: 'Sign In with %s',
+      passwordInputPlaceholder: '********',
+      title: titleField,
+      },
+      configurationBaseUrl: config.clientConfigurationBaseUrl,
+      overrides: {
+  	     __tenant: config.auth0Tenant,
+  	     __token_issuer: 'auth.julianwilliam.com'
+       },
+      rememberLastLogin: true,
+      socialButtonStyle: 'small',
+      theme: {
+        logo: 'http://www.indinnovation.com/images/icons/innovation.png',
+        primaryColor:    'gray'
+      },
+      prefill: loginHint ? { email: loginHint, username: loginHint } : null,
+    };
+    
+    var iOSAppClientID = 'nQZ2aHOUqjuriyd80HdiclHgvVU1Y4f9';
+    var onboardPWlessSgnIn = 'f3GnJLiPsFSRtqR0uTVtCtKJbPC8rtIq';
+
+    //if(connection === 'email' || connection === 'sms')
+    if(config.clientID === iOSAppClientID || config.clientID === onboardPWlessSgnIn)
+    {
+      var passwordlessLock = new Auth0LockPasswordless(config.clientID, config.auth0Domain, passwordlessOptions);
+    passwordlessLock.show();
+    }
+    else
+    {
+      var passwordLock = new Auth0Lock(config.clientID, config.auth0Domain, withPasswordOptions);
+    passwordLock.show();
+    };
+  </script>
+</body>
+</html>
+
