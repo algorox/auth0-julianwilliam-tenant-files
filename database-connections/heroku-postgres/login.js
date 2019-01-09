@@ -35,7 +35,7 @@ function login(email, password, callback) {
           callback(new WrongUsernameOrPasswordError(email));
         } else {
           callback(null, {
-            id: user.id,
+            id: 'postgres_' + user.id.toString(),
             nickname: user.nickname,
             email: user.email,
             email_verified: user.email_verified
